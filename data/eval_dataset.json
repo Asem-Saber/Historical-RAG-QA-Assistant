@@ -1,0 +1,82 @@
+[
+    {
+        "inputs": {
+            "question": "What did the ancient Egyptians believe was the function of the a'akh?"
+        },
+        "outputs": {
+        "expected_answer": "The a'akh was a liberated spirit soul that had an effective personality beyond the grave. It could assume human form to visit the earth and use the shabti (statues) to perform required labors in paradise."
+        }
+    },
+    {
+        "inputs": {
+            "question": "Who were the A'amu and what other names were they known by?"
+        },
+        "outputs": {
+            "expected_answer": "The A'amu was a term used by Egyptians to denote Asiatic peoples who attempted to invade the Nile Valley. In different historical periods, they were also referred to as the Hyksos or the Troglodytes."
+        }
+    },
+    {
+        "inputs": {
+            "question": "What happened to the Nubian ruler A'ata after his forces were defeated by 'Ahmose?"
+        },
+        "outputs": {
+            "expected_answer": "After his forces were crushed by the Egyptian warriors, A'ata was taken prisoner and tied to the prow of 'Ahmose's vessel for the return journey to Thebes, where he was likely publicly executed."
+        }
+    },
+    {
+        "inputs": {
+            "question": "What historical events and issues are documented in the Abbott Papyrus?"
+        },
+        "outputs": {
+            "expected_answer": "The Abbott Papyrus documents the interrogations and trials held during the Twentieth Dynasty to combat grave robbers. It details the uncovered network of thieves who were committing sacrilege by plundering royal tombs and mutilating mummies."
+        }
+    },
+    {
+        "inputs": {
+            "question": "In Egyptian mythology, what was A'aru?"
+        },
+        "outputs": {
+            "expected_answer": "A'aru was a legendary paradise in Amenti (the West) described as a lush, watery field filled with flowers and breezes. It was the eternal destination for Egyptian dead who were found worthy of such rewards."
+        }
+    },
+    {
+        "inputs": {
+            "question": "Why did Abdu Heba write letters of protest to Akhenaten?"
+        },
+        "outputs": {
+            "expected_answer": "Abdu Heba, the Prince of Jerusalem, wrote to Akhenaten to proclaim his innocence against accusations of raiding other lands and allying with the Apiru tribe. He also protested the dangerous presence of Egyptian troops in Jerusalem, claiming they went on a drunken spree, robbed his palace, and almost killed him."
+        }
+    },
+    {
+        "inputs": {
+            "question": "What specific structures and artifacts were found at the Abu Ghurob site?"
+        },
+        "outputs": {
+            "expected_answer": "Abu Ghurob contains two Fifth Dynasty sun temples, including the well-preserved temple of Niuserré Izi dedicated to the solar deity Ré. The complex features a causeway, vestibule, a courtyard for sacrifices, a chapel, a 'Chamber of the Seasons,' and the remains of a brick solar boat."
+        }
+    },
+    {
+        "inputs": {
+            "question": "Who was Abibaal and how did he secure his diplomatic relations with Egypt?"
+        },
+        "outputs": {
+            "expected_answer": "Abibaal was a 10th-century B.C.E. ruler in Phoenicia who served as a valuable trade partner for Egypt. He secured the continued goodwill of the Egyptian pharaoh Shoshenq I by erecting a monumental statue of him in a Phoenician temple."
+        }
+    },
+    {
+        "inputs": {
+            "question": "What were the primary criteria for selecting the A'a Nefer sacred bull for religious rites?"
+        },
+        "outputs": {
+            "expected_answer": "The A'a Nefer (or Onouphis) bull was chosen by priests based on its purity of breed, distinctive coloring, strength, and specific mystical marks."
+        }
+    },
+    {
+        "inputs": {
+            "question": "Who did the ancient Egyptians revere as the 'Lord of the Primeval Island of Trampling'?"
+        },
+        "outputs": {
+            "expected_answer": "The ancient Egyptians revered the mysterious divine being Aa as the 'Lord of the Primeval Island of Trampling,' which was a mystical site associated with the moment of creation."
+        }
+    }
+]
