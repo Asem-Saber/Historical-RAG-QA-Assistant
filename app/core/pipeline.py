@@ -22,7 +22,7 @@ retriever = vectorstore.as_retriever(search_kwargs={"k": settings.retriever_k})
 llm = ChatOpenAI(
     model=settings.llm_model_id,
     base_url=settings.llm_endpoint,
-    api_key=settings.github_api_key,
+    api_key=settings.api_key,
     temperature=settings.llm_temperature,
 )
 
