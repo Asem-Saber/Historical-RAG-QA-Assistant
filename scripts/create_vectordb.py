@@ -13,7 +13,7 @@ from langchain_text_splitters import (
     MarkdownHeaderTextSplitter,
     RecursiveCharacterTextSplitter,
 )
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 
 from app.core.config import settings
@@ -67,7 +67,6 @@ def create_chunks(md_path: Path):
     )
     chunked_docs = text_splitter.split_documents(semantic_docs)
 
-    # Add contextual prefixes to each chunk
     for doc in chunked_docs:
         context_parts = []
         if "Major_Entry" in doc.metadata:
@@ -86,9 +85,9 @@ def create_chunks(md_path: Path):
 
 def build_vectorstore(chunked_docs):
     """Create Chroma vectorstore from chunked documents."""
-    embeddings = HuggingFaceEmbeddings(
-        model_name=settings.embedding_model,
-        model_kwargs={"device": settings.embedding_device},
+    embeddings = OllamaEmbeddings(
+        model=settings.embedding_model,
+        base_url=settings.embedding_endpoint,
     )
 
     vectorstore = Chroma.from_documents(

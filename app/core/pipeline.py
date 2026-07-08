@@ -2,15 +2,15 @@ import json
 from typing import Generator
 from langsmith import traceable
 from langchain_openai import ChatOpenAI
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 
 
-embeddings = HuggingFaceEmbeddings(
-    model_name=settings.embedding_model,
-    model_kwargs={"device": settings.embedding_device}
+embeddings = OllamaEmbeddings(
+    model=settings.embedding_model,
+    base_url=settings.embedding_endpoint,
 )
 
 vectorstore = Chroma(

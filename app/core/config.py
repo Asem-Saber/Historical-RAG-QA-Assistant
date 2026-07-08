@@ -12,17 +12,17 @@ class Settings(BaseSettings):
     """Centralized configuration loaded from .env file."""
 
     # API Keys
-    github_api_key: str = os.getenv("GITHUB_API_KEY")
+    api_key: str = os.getenv("API_KEY")
     llamaparse_api_key: str = os.getenv("LLAMAPARSE_API_KEY")
 
     # LLM
-    llm_endpoint: str = "https://models.github.ai/inference"
-    llm_model_id: str = "openai/gpt-4.1"
+    llm_endpoint: str = os.getenv("ENDPOINT")
+    llm_model_id: str = os.getenv("MODEL_ID")
     llm_temperature: float = 0
 
     # Embeddings
-    embedding_model: str = "sentence-transformers/LaBSE"
-    embedding_device: str = "cuda"
+    embedding_endpoint: str = os.getenv("OLLAMA_ENDPOINT")
+    embedding_model: str = os.getenv("OLLAMA_EMBEDDING_MODEL")
 
     # Paths
     chroma_path: str = str(BASE_DIR / "vectorstore")
