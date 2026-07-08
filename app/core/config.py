@@ -24,12 +24,15 @@ class Settings(BaseSettings):
     embedding_endpoint: str = os.getenv("OLLAMA_ENDPOINT")
     embedding_model: str = os.getenv("OLLAMA_EMBEDDING_MODEL")
 
+    # Re-Ranking
+    reranker_model_name: str = os.getenv("RERANKER_MODEL_NAME")
+
     # Paths
     chroma_path: str = str(BASE_DIR / "vectorstore")
     data_dir: str = str(BASE_DIR / "data")
 
     # Retriever
-    retriever_k: int = 5
+    retriever_k: int = 4
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / ".env"),
