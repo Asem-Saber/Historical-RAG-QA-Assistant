@@ -13,7 +13,7 @@ DATASET_NAME = "Ancient Egypt RAG Evaluation"
 
 judge_llm = ChatOpenAI(
     base_url=settings.llm_endpoint,
-    api_key=settings.github_api_key,
+    api_key=settings.api_key,
     model="openai/gpt-4o-mini",
     temperature=0,
 )
