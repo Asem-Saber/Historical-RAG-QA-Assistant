@@ -21,10 +21,11 @@ async def chat(request: ChatRequest, pipeline=Depends(get_pipeline)):
 
     source_documents = [
         SourceDocument(
+            citation=i,
             content=doc.page_content,
             metadata=doc.metadata,
         )
-        for doc in result.get("source_documents", [])
+        for i, doc in enumerate(result.get("source_documents", []), 1)
     ]
 
     return ChatResponse(

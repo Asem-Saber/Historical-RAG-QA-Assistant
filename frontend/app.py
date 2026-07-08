@@ -39,7 +39,7 @@ if prompt := st.chat_input("What would you like to know?"):
                 if not line or not line.startswith("data: "):
                     continue
 
-                payload = json.loads(line[6:])  
+                payload = json.loads(line[6:])
 
                 if payload["type"] == "chunk":
                     full_answer += payload["content"]
@@ -55,20 +55,19 @@ if prompt := st.chat_input("What would you like to know?"):
             answer = full_answer
 
             if sources:
-                with st.expander("View Sources"):
+                with st.expander("Sources & Citations"):
                     for doc in sources:
-                        metadata = doc.get("metadata", {})
-                        source_name = metadata.get(
-                            "headline",
-                            metadata.get("author", "Unknown Source"),
-                        )
-                        st.write(f"- {source_name}")
+                        citation = doc.get("citation", "")
+                        content = doc.get("content", "")
+                        preview = content[:300] + "..." if len(content) > 300 else content
+                        st.markdown(f"**[{citation}]** {preview}")
+                        st.divider()
 
         except requests.exceptions.ConnectionError:
-            answer = "⚠️ Could not connect to the API. Make sure the FastAPI server is running."
+            answer = "Could not connect to the API. Make sure the FastAPI server is running."
             st.error(answer)
         except requests.exceptions.RequestException as e:
-            answer = f"⚠️ API error: {e}"
+            answer = f"API error: {e}"
             st.error(answer)
 
     st.session_state.messages.append({"role": "assistant", "content": answer})

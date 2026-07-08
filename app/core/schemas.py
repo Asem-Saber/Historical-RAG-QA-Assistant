@@ -7,7 +7,8 @@ class ChatRequest(BaseModel):
 
 
 class SourceDocument(BaseModel):
-    """A single retrieved source document."""
+    """A single retrieved source document with citation index."""
+    citation: int
     content: str
     metadata: dict
 
