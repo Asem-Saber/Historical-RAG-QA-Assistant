@@ -67,3 +67,10 @@ async def chat_stream(request: ChatRequest, stream_pipeline=Depends(get_stream_p
         stream_pipeline(request.query),
         media_type="text/event-stream",
     )
+
+
+@router.get("/metrics")
+async def get_metrics():
+    """Return running averages for latency and token consumption."""
+    from app.core.pipeline import metrics
+    return metrics.snapshot()

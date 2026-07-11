@@ -1,5 +1,7 @@
 import json
 import logging
+import time
+import threading
 from typing import Generator
 
 from langchain_openai import ChatOpenAI
@@ -14,6 +16,41 @@ from app.retrieval.hybrid import build_hybrid_retriever
 from app.retrieval.reranker import Reranker
 
 logger = logging.getLogger(__name__)
+
+
+class _MetricsAccumulator:
+    """Thread-safe running totals for latency and token usage."""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self.request_count = 0
+        self.total_latency = 0.0
+        self.total_input_tokens = 0
+        self.total_output_tokens = 0
+
+    def record(self, latency: float, input_tokens: int, output_tokens: int):
+        with self._lock:
+            self.request_count += 1
+            self.total_latency += latency
+            self.total_input_tokens += input_tokens
+            self.total_output_tokens += output_tokens
+
+    def snapshot(self) -> dict:
+        with self._lock:
+            n = self.request_count
+            if n == 0:
+                return {"requests": 0}
+            return {
+                "requests": n,
+                "avg_latency": round(self.total_latency / n, 2),
+                "total_input_tokens": self.total_input_tokens,
+                "total_output_tokens": self.total_output_tokens,
+                "avg_input_tokens": round(self.total_input_tokens / n),
+                "avg_output_tokens": round(self.total_output_tokens / n),
+            }
+
+
+metrics = _MetricsAccumulator()
 
 # Shared components
 
@@ -106,27 +143,93 @@ def format_docs(docs) -> str:
 
 
 @traceable(name="Generate Answer", run_type="llm")
-def generate_answer(query: str, context: str) -> str:
+def generate_answer(query: str, context: str) -> tuple[str, dict]:
     messages = prompt_template.invoke({"input": query, "context": context})
-    return llm.invoke(messages).content
+    response = llm.invoke(messages)
+    token_usage = {}
+    if hasattr(response, "usage_metadata") and response.usage_metadata:
+        token_usage = {
+            "input_tokens": response.usage_metadata.get("input_tokens", 0),
+            "output_tokens": response.usage_metadata.get("output_tokens", 0),
+            "total_tokens": response.usage_metadata.get("total_tokens", 0),
+        }
+    return response.content, token_usage
 
 
-def stream_generate_answer(query: str, context: str) -> Generator[str, None, None]:
+def stream_generate_answer(query: str, context: str, token_usage_out: dict | None = None) -> Generator[str, None, None]:
     messages = prompt_template.invoke({"input": query, "context": context})
     for chunk in llm.stream(messages):
         if chunk.content:
             yield chunk.content
+        if token_usage_out is not None and hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+            token_usage_out["input_tokens"] = chunk.usage_metadata.get("input_tokens", 0)
+            token_usage_out["output_tokens"] = chunk.usage_metadata.get("output_tokens", 0)
+            token_usage_out["total_tokens"] = chunk.usage_metadata.get("total_tokens", 0)
 
 # Orchestrators
 
 
+def _log_metrics(query: str, timings: dict, docs_before_rerank: int, docs_after_rerank: int,
+                  sub_queries: list[str], token_usage: dict | None = None):
+    total = sum(timings.values())
+    token_str = ""
+    if token_usage:
+        token_str = (
+            f" input_tokens={token_usage.get('input_tokens', 0)}"
+            f" output_tokens={token_usage.get('output_tokens', 0)}"
+            f" total_tokens={token_usage.get('total_tokens', 0)}"
+        )
+    logger.info(
+        "METRIC query=%r total=%.2fs decompose=%.2fs retrieve=%.2fs rerank=%.2fs format=%.2fs generate=%.2fs "
+        "sub_queries=%d docs_retrieved=%d docs_after_rerank=%d%s",
+        query[:80], total,
+        timings.get("decompose", 0),
+        timings.get("retrieve", 0),
+        timings.get("rerank", 0),
+        timings.get("format", 0),
+        timings.get("generate", 0),
+        len(sub_queries), docs_before_rerank, docs_after_rerank, token_str,
+    )
+    metrics.record(
+        latency=total,
+        input_tokens=token_usage.get("input_tokens", 0) if token_usage else 0,
+        output_tokens=token_usage.get("output_tokens", 0) if token_usage else 0,
+    )
+    snap = metrics.snapshot()
+    logger.info(
+        "METRIC_AVG requests=%d avg_latency=%.2fs avg_input_tokens=%d avg_output_tokens=%d",
+        snap["requests"], snap.get("avg_latency", 0),
+        snap.get("avg_input_tokens", 0), snap.get("avg_output_tokens", 0),
+    )
+
+
 @traceable(name="RAG Pipeline")
 def AncientEgyptRAG(query: str) -> dict:
+    timings = {}
+
+    t = time.perf_counter()
     sub_queries = decompose_query(query)
+    timings["decompose"] = time.perf_counter() - t
+
+    t = time.perf_counter()
     docs = retrieve_for_subqueries(sub_queries)
+    timings["retrieve"] = time.perf_counter() - t
+    docs_before = len(docs)
+
+    t = time.perf_counter()
     docs = reranker.rerank(query, docs, top_n=5)
+    timings["rerank"] = time.perf_counter() - t
+
+    t = time.perf_counter()
     context = format_docs(docs)
-    answer = generate_answer(query, context)
+    timings["format"] = time.perf_counter() - t
+
+    t = time.perf_counter()
+    answer, token_usage = generate_answer(query, context)
+    timings["generate"] = time.perf_counter() - t
+
+    _log_metrics(query, timings, docs_before, len(docs), sub_queries, token_usage)
+
     return {
         "answer": answer,
         "source_documents": docs,
@@ -135,13 +238,35 @@ def AncientEgyptRAG(query: str) -> dict:
 
 def AncientEgyptRAGStream(query: str) -> Generator[str, None, None]:
     try:
-        sub_queries = decompose_query(query)
-        docs = retrieve_for_subqueries(sub_queries)
-        docs = reranker.rerank(query, docs, top_n=5)
-        context = format_docs(docs)
+        timings = {}
 
-        for token in stream_generate_answer(query, context):
+        t = time.perf_counter()
+        sub_queries = decompose_query(query)
+        timings["decompose"] = time.perf_counter() - t
+
+        t = time.perf_counter()
+        docs = retrieve_for_subqueries(sub_queries)
+        timings["retrieve"] = time.perf_counter() - t
+        docs_before = len(docs)
+
+        t = time.perf_counter()
+        docs = reranker.rerank(query, docs, top_n=5)
+        timings["rerank"] = time.perf_counter() - t
+
+        t = time.perf_counter()
+        context = format_docs(docs)
+        timings["format"] = time.perf_counter() - t
+
+        t = time.perf_counter()
+        token_count = 0
+        stream_token_usage = {}
+        for token in stream_generate_answer(query, context, token_usage_out=stream_token_usage):
+            token_count += 1
             yield f"data: {json.dumps({'type': 'chunk', 'content': token})}\n\n"
+        timings["generate"] = time.perf_counter() - t
+
+        if not stream_token_usage:
+            stream_token_usage = {"input_tokens": 0, "output_tokens": token_count, "total_tokens": token_count}
 
         sources = [
             {"citation": i, "content": doc.page_content, "metadata": doc.metadata}
@@ -149,6 +274,10 @@ def AncientEgyptRAGStream(query: str) -> Generator[str, None, None]:
         ]
         yield f"data: {json.dumps({'type': 'sources', 'documents': sources})}\n\n"
         yield 'data: {"type": "done"}\n\n'
+
+        _log_metrics(query, timings, docs_before, len(docs), sub_queries, stream_token_usage)
+        logger.info("METRIC query=%r tokens_streamed=%d", query[:80], token_count)
+
     except Exception as e:
         logger.error("Stream pipeline failed", exc_info=True)
         yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
