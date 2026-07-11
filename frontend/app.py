@@ -48,6 +48,11 @@ if prompt := st.chat_input("What would you like to know?"):
                 elif payload["type"] == "sources":
                     sources = payload.get("documents", [])
 
+                elif payload["type"] == "error":
+                    full_answer = f"Something went wrong: {payload.get('message', 'Unknown error')}"
+                    answer_placeholder.error(full_answer)
+                    break
+
                 elif payload["type"] == "done":
                     break
 

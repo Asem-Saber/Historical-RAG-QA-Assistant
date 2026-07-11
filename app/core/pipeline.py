@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Generator
 
 from langchain_openai import ChatOpenAI
@@ -11,6 +12,8 @@ from langsmith import traceable
 from app.core.config import settings
 from app.retrieval.hybrid import build_hybrid_retriever
 from app.retrieval.reranker import Reranker
+
+logger = logging.getLogger(__name__)
 
 # Shared components
 
@@ -54,10 +57,14 @@ prompt_decomposition = ChatPromptTemplate.from_template(decomposition_template)
 
 @traceable(name="Decompose Query")
 def decompose_query(query: str) -> list[str]:
-    chain = prompt_decomposition | llm | JsonOutputParser()
-    result = chain.invoke({"input": query})
-    subs = result.get("sub_queries", [query])
-    return subs if subs else [query]
+    try:
+        chain = prompt_decomposition | llm | JsonOutputParser()
+        result = chain.invoke({"input": query})
+        subs = result.get("sub_queries", [query])
+        return subs if subs else [query]
+    except Exception:
+        logger.warning("Query decomposition failed, using original query", exc_info=True)
+        return [query]
 
 
 @traceable(name="Retrieve for Sub-queries", run_type="retriever")
@@ -112,6 +119,7 @@ def stream_generate_answer(query: str, context: str) -> Generator[str, None, Non
 
 # Orchestrators
 
+
 @traceable(name="RAG Pipeline")
 def AncientEgyptRAG(query: str) -> dict:
     sub_queries = decompose_query(query)
@@ -126,17 +134,21 @@ def AncientEgyptRAG(query: str) -> dict:
 
 
 def AncientEgyptRAGStream(query: str) -> Generator[str, None, None]:
-    sub_queries = decompose_query(query)
-    docs = retrieve_for_subqueries(sub_queries)
-    docs = reranker.rerank(query, docs, top_n=5)
-    context = format_docs(docs)
+    try:
+        sub_queries = decompose_query(query)
+        docs = retrieve_for_subqueries(sub_queries)
+        docs = reranker.rerank(query, docs, top_n=5)
+        context = format_docs(docs)
 
-    for token in stream_generate_answer(query, context):
-        yield f"data: {json.dumps({'type': 'chunk', 'content': token})}\n\n"
+        for token in stream_generate_answer(query, context):
+            yield f"data: {json.dumps({'type': 'chunk', 'content': token})}\n\n"
 
-    sources = [
-        {"citation": i, "content": doc.page_content, "metadata": doc.metadata}
-        for i, doc in enumerate(docs, 1)
-    ]
-    yield f"data: {json.dumps({'type': 'sources', 'documents': sources})}\n\n"
-    yield 'data: {"type": "done"}\n\n'
+        sources = [
+            {"citation": i, "content": doc.page_content, "metadata": doc.metadata}
+            for i, doc in enumerate(docs, 1)
+        ]
+        yield f"data: {json.dumps({'type': 'sources', 'documents': sources})}\n\n"
+        yield 'data: {"type": "done"}\n\n'
+    except Exception as e:
+        logger.error("Stream pipeline failed", exc_info=True)
+        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
