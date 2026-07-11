@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
-from app.core.schemas import ChatRequest, ChatResponse, SourceDocument
+from app.api.schemas import ChatRequest, ChatResponse, SourceDocument
 from app.api.dependencies import get_pipeline, get_stream_pipeline
 
 
