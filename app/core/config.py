@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     reranker_model_name: str = os.getenv("RERANKER_MODEL_NAME")
 
     # Paths
-    chroma_path: str = str(BASE_DIR / "vectorstore")
     data_dir: str = str(BASE_DIR / "data")
+    chroma_path: str = str(BASE_DIR / "data" / "vectorstore")
 
     # Retriever
     retriever_k: int = 4
