@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amun - Ancient Egypt Knowledge</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <span class="header-icon">𓋹</span>
+        <div>
+            <h1>Amun</h1>
+            <p>Ancient Egypt Knowledge Oracle</p>
+        </div>
+    </header>
+
+    <div class="chat-container">
+        <div class="chat-messages" id="chat-messages">
+            <div class="welcome">
+                <div class="welcome-icon">𓊝</div>
+                <h2>Greetings, Seeker of Knowledge</h2>
+                <p>Ask me anything about the ancient Egyptian civilization &mdash; pharaohs, gods, pyramids, daily life, and more.</p>
+                <div class="suggestions">
+                    <span class="suggestion-chip" onclick="useSuggestion('Who was Cleopatra VII?')">Who was Cleopatra VII?</span>
+                    <span class="suggestion-chip" onclick="useSuggestion('How were the pyramids built?')">How were the pyramids built?</span>
+                    <span class="suggestion-chip" onclick="useSuggestion('Tell me about the Book of the Dead')">The Book of the Dead</span>
+                    <span class="suggestion-chip" onclick="useSuggestion('What was daily life like in ancient Egypt?')">Daily life in Egypt</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <form class="input-form" id="chat-form">
+            <input type="text" id="query-input" placeholder="Ask about ancient Egypt..." autocomplete="off" autofocus>
+            <button type="submit" class="send-btn" id="send-btn">ASK</button>
+        </form>
+    </div>
+
+    <script src="/static/js/chat.js"></script>
+</body>
+</html>

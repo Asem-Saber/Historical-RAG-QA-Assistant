@@ -5,6 +5,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 
 from app.api.routes import chat
 from app.core.config import settings
@@ -50,3 +52,12 @@ app.add_middleware(
 )
 
 app.include_router(chat.router, prefix="/api")
+
+FRONTEND_DIR = Path(settings.base_dir) / "frontend"
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    template = FRONTEND_DIR / "templates" / "index.html"
+    return template.read_text(encoding="utf-8")

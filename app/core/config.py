@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     chroma_path: str = str(BASE_DIR / "data" / "vectorstore")
 
     # CORS
-    allowed_origins: list[str] = ["http://localhost:8501"]
+    allowed_origins: list[str] = ["http://localhost:8501", "http://localhost:8000"]
 
     # Retriever
     retriever_k: int = 4
