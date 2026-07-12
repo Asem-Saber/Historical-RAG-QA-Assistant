@@ -8,15 +8,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 
+from app.api.middleware import RequestIDFilter, RequestIDMiddleware
 from app.api.routes import chat
 from app.core.config import settings
 
 LOG_DIR = Path(settings.base_dir) / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
+_rid_filter = RequestIDFilter()
+_log_format = "%(asctime)s %(levelname)s %(name)s [%(request_id)s] — %(message)s"
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s — %(message)s",
+    format=_log_format,
     handlers=[
         logging.StreamHandler(),
         RotatingFileHandler(
@@ -27,6 +31,9 @@ logging.basicConfig(
         ),
     ],
 )
+
+for handler in logging.root.handlers:
+    handler.addFilter(_rid_filter)
 
 
 @asynccontextmanager
@@ -50,6 +57,7 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestIDMiddleware)
 
 app.include_router(chat.router, prefix="/api")
 
@@ -59,5 +67,4 @@ app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="stati
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
-    template = FRONTEND_DIR / "templates" / "index.html"
-    return template.read_text(encoding="utf-8")
+    return (FRONTEND_DIR / "templates" / "index.html").read_text(encoding="utf-8")
