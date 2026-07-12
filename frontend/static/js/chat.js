@@ -3,6 +3,12 @@ const inputForm = document.getElementById('chat-form');
 const inputField = document.getElementById('query-input');
 const sendBtn = document.getElementById('send-btn');
 
+function escapeHtml(str) {
+    const el = document.createElement('span');
+    el.textContent = str;
+    return el.innerHTML;
+}
+
 function scrollToBottom() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -16,11 +22,12 @@ function createMessageEl(role, content) {
     const div = document.createElement('div');
     div.className = `message message-${role}`;
 
-    const avatar = role === 'user' ? '𓀀' : '𓂀';
-    div.innerHTML = `
-        <div class="message-avatar">${avatar}</div>
-        <div class="message-content">${content}</div>
-    `;
+    const avatar = role === 'user' ? '\u{13000}' : '\u{13080}';
+    div.innerHTML = `<div class="message-avatar">${avatar}</div>`;
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.textContent = content;
+    div.appendChild(contentDiv);
     return div;
 }
 
@@ -29,7 +36,7 @@ function showLoading() {
     div.className = 'message message-assistant';
     div.id = 'loading-msg';
     div.innerHTML = `
-        <div class="message-avatar">𓂀</div>
+        <div class="message-avatar">\u{13080}</div>
         <div class="message-content">
             <div class="loading">
                 <span>Consulting the ancient scrolls</span>
@@ -51,18 +58,28 @@ function renderSources(sources, contentEl) {
 
     const citationsDiv = document.createElement('div');
     citationsDiv.className = 'citations';
-    citationsDiv.innerHTML = `
-        <button class="citations-toggle" onclick="this.nextElementSibling.classList.toggle('open')">
-            𓁿 Sources & Citations (${sources.length})
-        </button>
-        <div class="citations-list">
-            ${sources.map(s => `
-                <div class="citation-item">
-                    <strong>[${s.citation}]</strong> ${s.content.slice(0, 250)}${s.content.length > 250 ? '...' : ''}
-                </div>
-            `).join('')}
-        </div>
-    `;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'citations-toggle';
+    toggleBtn.textContent = `\u{1307F} Sources & Citations (${sources.length})`;
+    toggleBtn.addEventListener('click', () => listDiv.classList.toggle('open'));
+
+    const listDiv = document.createElement('div');
+    listDiv.className = 'citations-list';
+
+    for (const s of sources) {
+        const item = document.createElement('div');
+        item.className = 'citation-item';
+        const strong = document.createElement('strong');
+        strong.textContent = `[${s.citation}]`;
+        item.appendChild(strong);
+        const preview = s.content.length > 250 ? s.content.slice(0, 250) + '...' : s.content;
+        item.appendChild(document.createTextNode(' ' + preview));
+        listDiv.appendChild(item);
+    }
+
+    citationsDiv.appendChild(toggleBtn);
+    citationsDiv.appendChild(listDiv);
     contentEl.appendChild(citationsDiv);
 }
 
@@ -124,30 +141,31 @@ inputForm.addEventListener('submit', async (e) => {
 
                 if (data.type === 'chunk') {
                     fullText += data.content;
-                    contentEl.innerHTML = fullText + '<span class="cursor">▌</span>';
+                    contentEl.textContent = fullText + '◌';
                     scrollToBottom();
                 } else if (data.type === 'sources') {
-                    contentEl.innerHTML = fullText;
+                    contentEl.textContent = fullText;
                     renderSources(data.documents, contentEl);
                     sourcesRendered = true;
                     scrollToBottom();
                 } else if (data.type === 'error') {
-                    contentEl.innerHTML = `<em>Error: ${data.message}</em>`;
+                    contentEl.textContent = 'Error: ' + data.message;
                 } else if (data.type === 'done') {
                     if (!sourcesRendered) {
-                        contentEl.innerHTML = fullText;
+                        contentEl.textContent = fullText;
                     }
                 }
             }
         }
 
-        if (!sourcesRendered && contentEl.querySelector('.cursor')) {
-            contentEl.innerHTML = fullText;
+        if (!sourcesRendered && contentEl.childNodes.length === 1) {
+            contentEl.textContent = fullText;
         }
 
     } catch (err) {
         removeLoading();
-        messagesEl.appendChild(createMessageEl('assistant', `<em>Connection error: ${err.message}</em>`));
+        const errEl = createMessageEl('assistant', 'Connection error: ' + err.message);
+        messagesEl.appendChild(errEl);
     }
 
     setInputEnabled(true);
