@@ -1,0 +1,46 @@
+[project]
+name = "ancient-egypt-rag"
+version = "2.0.0"
+description = "A RAG-powered QA assistant for Ancient Egyptian civilization"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.135.2",
+    "uvicorn[standard]==0.42.0",
+    "pydantic-settings==2.13.1",
+    "python-dotenv==1.2.1",
+
+    "sentence-transformers==5.2.3",
+
+    "langchain-openai==1.2.1",
+    "langchain-community==0.4.1",
+    "langchain-classic==1.0.3",
+    "langchain-ollama==1.1.0",
+    "langchain-chroma==1.1.0",
+    "langchain-text-splitters==1.1.1",
+    "langchain-core==1.4.9",
+    "langsmith==0.7.29",
+
+    "rank-bm25==0.2.2",
+
+    "llama-cloud==2.8.0",
+]
+
+[project.optional-dependencies]
+eval = [
+    "openevals==0.2.0",
+]
+dev = [
+    "ruff>=0.12.0",
+    "pytest>=8.0.0",
+    "httpx>=0.28.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
