@@ -3,5 +3,9 @@ __pycache__/
 *.pyc
 logs/
 
+checkpoints.sqlite
+checkpoints.sqlite-shm
+checkpoints.sqlite-wal
+
 .venv/
 *.egg-info/
