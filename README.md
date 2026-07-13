@@ -280,4 +280,4 @@ The API is available at `http://localhost:8000` with interactive docs at `/docs`
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
