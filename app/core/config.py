@@ -1,31 +1,41 @@
 from pathlib import Path
-import os 
+
 from dotenv import load_dotenv
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-load_dotenv(dotenv_path=BASE_DIR/ ".env")
+
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 
 class Settings(BaseSettings):
     """Centralized configuration loaded from .env file."""
 
     # API Keys
-    api_key: str = os.getenv("API_KEY")
-    llamaparse_api_key: str = os.getenv("LLAMAPARSE_API_KEY")
+    api_key: str
+    llamaparse_api_key: str = ""
 
     # LLM
-    llm_endpoint: str = os.getenv("ENDPOINT")
-    llm_model_id: str = os.getenv("MODEL_ID")
+    llm_endpoint: str = Field(
+        validation_alias=AliasChoices("llm_endpoint", "endpoint"),
+    )
+    llm_model_id: str = Field(
+        validation_alias=AliasChoices("llm_model_id", "model_id"),
+    )
     llm_temperature: float = 0
 
     # Embeddings
-    embedding_endpoint: str = os.getenv("OLLAMA_ENDPOINT")
-    embedding_model: str = os.getenv("OLLAMA_EMBEDDING_MODEL")
+    embedding_endpoint: str = Field(
+        validation_alias=AliasChoices("embedding_endpoint", "ollama_endpoint"),
+    )
+    embedding_model: str = Field(
+        validation_alias=AliasChoices("embedding_model", "ollama_embedding_model"),
+    )
 
     # Re-Ranking
-    reranker_model_name: str = os.getenv("RERANKER_MODEL_NAME")
+    reranker_model_name: str
 
     # Paths
     base_dir: str = str(BASE_DIR)
