@@ -56,6 +56,7 @@ async def chat(request: ChatRequest, pipeline=Depends(get_pipeline)):
     return ChatResponse(
         answer=result["answer"],
         source_documents=source_documents,
+        thread_id=result.get("thread_id", ""),
     )
 
 
@@ -67,6 +68,47 @@ async def chat_stream(request: ChatRequest, stream_pipeline=Depends(get_stream_p
         stream_pipeline(request.query),
         media_type="text/event-stream",
     )
+
+
+@router.get("/state/{thread_id}")
+async def get_thread_state(thread_id: str):
+    """Inspect the full agent state for a given thread."""
+    from app.core.graph import get_state
+
+    checkpoint = get_state(thread_id)
+    if checkpoint is None:
+        raise HTTPException(status_code=404, detail=f"No state found for thread {thread_id}")
+
+    state = checkpoint["channel_values"]
+
+    docs = state.get("documents", [])
+    messages = state.get("messages", [])
+
+    return {
+        "thread_id": thread_id,
+        "original_query": state.get("original_query"),
+        "rewritten_query": state.get("rewritten_query"),
+        "sub_queries": state.get("sub_queries", []),
+        "retrieval_attempts": state.get("retrieval_attempts", 0),
+        "guardrail_result": {
+            "score": state["guardrail_result"].score,
+            "reason": state["guardrail_result"].reason,
+        } if state.get("guardrail_result") else None,
+        "routing_decision": state.get("routing_decision"),
+        "document_count": len(docs),
+        "documents": [
+            {"content": doc.page_content[:200], "metadata": doc.metadata}
+            for doc in docs
+        ],
+        "grading_results": [r.model_dump() for r in state.get("grading_results", [])],
+        "sources": state.get("sources", []),
+        "metadata": state.get("metadata", {}),
+        "message_count": len(messages),
+        "messages": [
+            {"type": type(m).__name__, "content": m.content[:200] if m.content else ""}
+            for m in messages
+        ],
+    }
 
 
 @router.get("/metrics")

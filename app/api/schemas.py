@@ -17,3 +17,4 @@ class ChatResponse(BaseModel):
     """Chat response with answer and sources."""
     answer: str
     source_documents: list[SourceDocument]
+    thread_id: str = ""
