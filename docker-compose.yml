@@ -1,0 +1,101 @@
+services:
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    expose:
+      - "11434"
+    volumes:
+      - ~/.ollama:/root/.ollama
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - backend
+    entrypoint: ["sh", "-c", "timeout 300 ollama pull qwen3-embedding:8b"]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    restart: on-failure:3
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    restart: unless-stopped
+    environment:
+      ENDPOINT: https://openrouter.ai/api/v1
+      MODEL_ID: openai/gpt-4o-mini
+      OLLAMA_ENDPOINT: http://ollama:11434
+      OLLAMA_EMBEDDING_MODEL: qwen3-embedding:8b
+      RERANKER_MODEL_NAME: BAAI/bge-reranker-v2-m3
+      LANGSMITH_TRACING: "true"
+      LANGSMITH_ENDPOINT: https://api.smith.langchain.com
+      LANGSMITH_PROJECT: AncientEgyptRAG
+    secrets:
+      - source: api_key
+        mode: 0400
+      - source: langsmith_api_key
+        mode: 0400
+    ports:
+      - "8000:8000"
+    networks:
+      - backend
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    volumes:
+      - ./data/vectorstore:/app/data/vectorstore:ro
+      - checkpoints_data:/app/data/checkpoints
+      - app_logs:/app/logs
+    read_only: true
+    tmpfs:
+      - /tmp
+
+secrets:
+  api_key:
+    file: ./secrets/api_key.txt
+  langsmith_api_key:
+    file: ./secrets/langsmith_api_key.txt
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  checkpoints_data:
+    driver: local
+    labels:
+      app: ancient-egypt-rag
+      tier: state
+  app_logs:
+    driver: local
+    labels:
+      app: ancient-egypt-rag
+      tier: logs
