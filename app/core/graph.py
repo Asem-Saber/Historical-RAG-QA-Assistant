@@ -41,7 +41,9 @@ _INITIAL_STATE = {
     "rewritten_query": None,
 }
 
-CHECKPOINT_DB = Path(settings.data_dir) / "checkpoints.sqlite"
+CHECKPOINT_DIR = Path(settings.data_dir) / "checkpoints"
+CHECKPOINT_DIR.mkdir(exist_ok=True)
+CHECKPOINT_DB = CHECKPOINT_DIR / "checkpoints.sqlite"
 _conn = sqlite3.connect(str(CHECKPOINT_DB), check_same_thread=False)
 checkpointer = SqliteSaver(_conn)
 
