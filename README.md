@@ -165,13 +165,52 @@ data/
 
 ### Prerequisites
 
-- **Python 3.12+**
-- **Ollama** running locally with an embedding model
 - An **OpenAI-compatible LLM endpoint** (OpenRouter, GitHub Models, Azure, etc.)
-- **LlamaParse API key** (only needed if rebuilding the vector store from PDF)
 - **LangSmith API key** (optional, for tracing and evaluation)
 
-### Installation
+### Option 1: Docker (Recommended)
+
+Requires **Docker**, **Docker Compose**, and **NVIDIA Container Toolkit** (for GPU-accelerated Ollama).
+
+**Clone the repository**
+
+```bash
+git clone https://github.com/your-username/Historical-RAG-QA-Assistant.git
+cd Historical-RAG-QA-Assistant
+```
+
+**Add your API keys**
+
+```bash
+mkdir -p secrets
+echo "your-api-key" > secrets/api_key.txt
+echo "your-langsmith-key" > secrets/langsmith_api_key.txt
+```
+
+**Pull the embedding model** (if not already available locally)
+
+```bash
+ollama pull qwen3-embedding:8b
+```
+
+The container mounts your local `~/.ollama` directory, so any models you already have are shared with the container automatically.
+
+**Build and run**
+
+```bash
+docker compose up --build
+```
+
+This starts three services:
+- **ollama** -- GPU-accelerated embedding server (shares your local Ollama models)
+- **ollama-init** -- pulls the embedding model if not already present locally
+- **app** -- the RAG API and chat UI on port 8000
+
+The API is available at `http://localhost:8000` with interactive docs at `/docs`. The chat UI is served at the root `/`.
+
+### Option 2: Local Development
+
+Requires **Python 3.12+** and **Ollama** running locally.
 
 **Clone the repository**
 
